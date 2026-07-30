@@ -44,4 +44,6 @@ end
 
 print("Installing OneOS...")
 downloadDir("")
-print("OneOS installed! Reboot with 'reboot'")
+print("OneOS installed!")
+sleep(1)
+os.reboot()
