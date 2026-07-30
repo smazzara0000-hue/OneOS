@@ -1,6 +1,6 @@
 -- OneOS Installer - Animated Progress Bar - smazzara0000-hue/OneOS
 
-local mainTitle = 'OneOS Installer - YOUR REPO'
+local mainTitle = 'OneOS Installer'
 local subTitle = 'Fetching file list...'
 local barText = ''
 
