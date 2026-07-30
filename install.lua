@@ -1,6 +1,3 @@
-cd $HOME\Desktop\OneOS
-
-@'
 -- OneOS Installer - smazzara0000-hue/OneOS
 local owner = "smazzara0000-hue"
 local repo = "OneOS"
@@ -48,8 +45,3 @@ end
 print("Installing OneOS...")
 downloadDir("")
 print("OneOS installed! Reboot with 'reboot'")
-'@ | Set-Content -Path ".\install.lua" -Force
-
-git add install.lua
-git commit -m "Add install.lua back"
-git push origin main
