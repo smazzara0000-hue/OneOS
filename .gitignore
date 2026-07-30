@@ -1,5 +1,24 @@
-.git
-Desktop/
-*.shortcut
 .DS_Store
+.Desktop.settings
+.OneOS.settings
+*.settings
 
+Desktop/.Desktop.settings
+
+.version
+
+*.settings
+
+Desktop/.Desktop.settings
+
+Programs/Quest
+
+System/.OneOS.settings
+
+System/.OneOS.settings
+
+Changes
+
+System/.fingerprint
+
+dorelease
