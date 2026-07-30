@@ -1,102 +1,76 @@
--- OneOS Installer - Fixed for smazzara0000-hue/OneOS
--- Downloads directly from your GitHub repo (main branch)
--- No Pastebin dependency
+-- OneOS Installer - Animated Progress Bar - smazzara0000-hue/OneOS
 
-if not term.isColor or not term.isColor() then
-    error("OneOS requires an Advanced Computer")
-end
+local mainTitle = 'OneOS Installer - YOUR REPO'
+local subTitle = 'Fetching file list...'
+local barText = ''
 
-if not http then
-    error("HTTP must be enabled")
+function Draw()
+    term.setBackgroundColour(colours.white)
+    term.clear()
+    local w, h = term.getSize()
+    term.setTextColour(colours.lightBlue)
+    term.setCursorPos(math.ceil((w-#mainTitle)/2), 7)
+    term.write(mainTitle)
+    term.setTextColour(colours.blue)
+    term.setCursorPos(math.ceil((w-#subTitle)/2), 9)
+    term.write(subTitle)
+    term.setTextColour(colours.black)
+    term.setCursorPos(math.ceil((w-#barText)/2), 12)
+    term.write(barText)
 end
 
 local owner = "smazzara0000-hue"
 local repo = "OneOS"
 local branch = "main"
-
-local rawBase = "https://raw.githubusercontent.com/"..owner.."/"..repo.."/"..branch.."/"
 local treeUrl = "https://api.github.com/repos/"..owner.."/"..repo.."/git/trees/"..branch.."?recursive=1"
+local rawBase = "https://raw.githubusercontent.com/"..owner.."/"..repo.."/"..branch.."/"
 
-local blacklist = {
-    [".gitignore"] = true,
-    ["README.md"] = true,
-    ["TODO"] = true,
-    ["install.lua"] = true,
-}
-
-local function downloadJson(url)
-    local res = http.get(url)
-    if not res then error("Failed to fetch: "..url) end
-    local data = res.readAll()
-    res.close()
-    return textutils.unserialiseJSON(data)
+function downloadJson(url)
+    local r = http.get(url)
+    if not r then error("Failed: "..url) end
+    local d = r.readAll() r.close()
+    return textutils.unserialiseJSON(d)
 end
 
-local function downloadFile(path)
-    -- Fix double OneOS/ folder if present in repo
-    local savePath = path
-    if savePath:sub(1,5) == "OneOS/" then
-        savePath = savePath:sub(6)
-    end
-
-    if blacklist[savePath] or blacklist[path] then
-        return
-    end
-
-    print("Downloading "..savePath)
-    local rawUrl = rawBase.. path
-    rawUrl = rawUrl:gsub(" ", "%%20") -- fixed: assign first, no second arg to http.get
-
-    local res = http.get(rawUrl)
-    if not res then
-        print(" FAILED: "..path)
-        return
-    end
-    local content = res.readAll()
-    res.close()
-
-    local dir = fs.getDir("/"..savePath)
-    if dir ~= "" and not fs.exists(dir) then
-        fs.makeDir(dir)
-    end
-
-    local file = fs.open("/"..savePath, "w")
-    file.write(content)
-    file.close()
-end
-
-term.setBackgroundColor(colors.white)
-term.clear()
-term.setCursorPos(1,1)
-print("OneOS Installer - YOUR REPO")
-print("Fetching file list from "..branch.."...")
+Draw()
 local treeData = downloadJson(treeUrl)
+local total = 0
+for _, v in ipairs(treeData.tree) do if v.type == "blob" then total = total + 1 end end
 
-if not treeData or not treeData.tree then
-    error("Could not get file tree, check repo exists and is public")
-end
-
--- First create all folders
+local done = 0
 for _, v in ipairs(treeData.tree) do
     if v.type == "tree" then
-        local p = v.path
-        if p:sub(1,5) == "OneOS/" then p = p:sub(6) end
+        local p = v.path if p:sub(1,5)=="OneOS/" then p=p:sub(6) end
         if not fs.exists("/"..p) then fs.makeDir("/"..p) end
+    else
+        local savePath = v.path if savePath:sub(1,5)=="OneOS/" then savePath=savePath:sub(6) end
+        if savePath ~= "install.lua" then
+            done = done + 1
+            local percent = math.floor(done/total*100)
+            local width = 20
+            local filled = math.floor(width * percent / 100)
+            barText = "["..string.rep("#", filled)..string.rep(" ", width-filled).."] "..percent.."%"
+            subTitle = savePath
+            Draw()
+
+            local rawUrl = rawBase .. v.path
+            rawUrl = (rawUrl:gsub(" ", "%%20"))
+            local f = http.get(rawUrl)
+            if f then
+                local data = f.readAll() f.close()
+                local dir = fs.getDir("/"..savePath)
+                if dir ~= "" and not fs.exists(dir) then fs.makeDir(dir) end
+                local file = fs.open("/"..savePath, "w")
+                file.write(data) file.close()
+            end
+        end
     end
 end
 
--- Then download all files
-for _, v in ipairs(treeData.tree) do
-    if v.type == "blob" then
-        downloadFile(v.path)
-    end
-end
-
--- Create version file required by OneOS
-local vf = fs.open("/System/.version","w")
-vf.write("v1.1.1")
-vf.close()
-
-print("Installation Complete! Rebooting...")
+local h = fs.open('/System/.version', 'w') h.write('v9.9.9') h.close()
+mainTitle = 'Installation Complete!'
+subTitle = 'Rebooting...'
+barText = '[####################] 100%'
+Draw()
 sleep(1)
 os.reboot()
